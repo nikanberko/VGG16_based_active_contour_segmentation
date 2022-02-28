@@ -1,5 +1,10 @@
 # import the necessary packages
 
+import matplotlib.pyplot as plt
+from skimage.color import rgb2gray
+from skimage import data
+from skimage.filters import gaussian
+from skimage.segmentation import active_contour
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.models import load_model
@@ -40,7 +45,7 @@ print("[INFO] loading object detector...")
 model = load_model(config.MODEL_PATH)
 # loop over the images that we'll be testing using our bounding box
 # regression model
-imagePath="C:/Users/Nikola/Desktop/skin_lesions/images/ISIC_0024504.jpg"
+imagePath="C:/Users/Nikola/Desktop/skin_lesions/images/ISIC_0024406.jpg"
 # load the input image (in Keras format) from disk and preprocess
 # it, scaling the pixel intensities to the range [0, 1]
 image = load_img(imagePath, target_size=(224, 224))
@@ -58,10 +63,33 @@ image = imutils.resize(image, width=600)
 # dimensions
 rx = int(rx * w)
 ry = int(ry * h)
-cx = int(cx * w * 1)
-cy = int(cy * h * 1)
+cx = int(cx * w * 1.1)
+cy = int(cy * h * 1.1)
+
 # draw the predicted bounding box on the image
-cv2.ellipse(image, (rx, ry), (cx, cy), 0, 0, 360, (0, 0, 255), 5)
+#cv2.ellipse(image, (rx, ry), (cx, cy), 0, 0, 360, (0, 0, 255), 5)
 # show the output image
-cv2.imshow("Output", image)
-cv2.waitKey(0)
+#cv2.imshow("Output", image)
+
+img = image
+
+img = rgb2gray(img)
+
+s = np.linspace(0, 2*np.pi, 400)
+r = 100 + 100*np.sin(s)
+c = 220 + 100*np.cos(s)
+
+init = np.array([r, c]).T
+
+snake = active_contour(gaussian(img, 3, preserve_range=False),
+                       init, alpha=0.015, beta=10, gamma=0.001)
+
+fig, ax = plt.subplots(figsize=(7, 7))
+ax.imshow(img, cmap=plt.cm.gray)
+ax.plot(init[:, 1], init[:, 0], '--r', lw=3)
+ax.plot(snake[:, 1], snake[:, 0], '-b', lw=3)
+ax.set_xticks([]), ax.set_yticks([])
+ax.axis([0, img.shape[1], img.shape[0], 0])
+
+
+plt.show()
